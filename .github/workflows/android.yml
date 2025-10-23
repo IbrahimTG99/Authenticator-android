@@ -1,0 +1,72 @@
+name: Generate APK & AAB (Upload Artifacts)
+
+on:
+  push:
+    branches:
+      - main
+      - 'main/**'
+  workflow_dispatch:
+
+env:
+  MAIN_MODULE: app
+  PLAYSTORE_NAME: testing_store
+
+jobs:
+  build:
+    name: Build & Upload APK/AAB
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Set dynamic environment variables
+      - name: Set build metadata
+        run: |
+          echo "DATE_TODAY=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+          echo "REPO_NAME=$(basename $GITHUB_REPOSITORY)" >> $GITHUB_ENV
+
+      # Setup JDK
+      - name: Setup JDK 17 (Zulu)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      # Make Gradle wrapper executable
+      - name: Grant execute permission for Gradle wrapper
+        run: chmod +x ./gradlew
+
+      # Clean & build project (APK + AAB)
+      - name: Build APKs and AAB
+        run: |
+          ./gradlew clean
+          ./gradlew assembleDebug
+          ./gradlew assembleRelease
+          ./gradlew ${{ env.MAIN_MODULE }}:bundleRelease
+
+      # Upload Debug APKs
+      - name: Upload Debug APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ env.DATE_TODAY }}-${{ env.PLAYSTORE_NAME }}-${{ env.REPO_NAME }}-debug-apks"
+          path: ${{ env.MAIN_MODULE }}/build/outputs/apk/debug/
+          if-no-files-found: warn
+
+      # Upload Release APKs
+      - name: Upload Release APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ env.DATE_TODAY }}-${{ env.PLAYSTORE_NAME }}-${{ env.REPO_NAME }}-release-apks"
+          path: ${{ env.MAIN_MODULE }}/build/outputs/apk/release/
+          if-no-files-found: warn
+
+      # Upload Release AAB
+      - name: Upload Release App Bundle (AAB)
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ env.DATE_TODAY }}-${{ env.PLAYSTORE_NAME }}-${{ env.REPO_NAME }}-release-aab"
+          path: ${{ env.MAIN_MODULE }}/build/outputs/bundle/release/
+          if-no-files-found: warn

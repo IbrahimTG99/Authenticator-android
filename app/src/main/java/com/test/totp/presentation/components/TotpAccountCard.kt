@@ -27,6 +27,7 @@ import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.test.totp.data.model.TotpAccount
 import com.test.totp.data.model.TotpCode
+import com.test.totp.presentation.viewmodel.MainViewModel
 
 /**
  * Card component for displaying TOTP account information
