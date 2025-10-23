@@ -5,92 +5,236 @@ import com.test.totp.data.dao.UserPreferencesDao
 import com.test.totp.data.model.TotpAccount
 import com.test.totp.data.model.UserPreferences
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mock
-import org.mockito.Mockito.*
 import org.mockito.junit.MockitoJUnitRunner
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
+import kotlin.test.assertEquals
 
 @RunWith(MockitoJUnitRunner::class)
 class TotpRepositoryTest {
-    
+
     @Mock
-    private lateinit var totpAccountDao: TotpAccountDao
-    
+    private lateinit var mockTotpAccountDao: TotpAccountDao
+
     @Mock
-    private lateinit var userPreferencesDao: UserPreferencesDao
-    
-    private lateinit var repository: TotpRepository
-    
+    private lateinit var mockUserPreferencesDao: UserPreferencesDao
+
+    private lateinit var totpRepository: TotpRepository
+
+    private companion object {
+        val testAccount = TotpAccount(
+            id = "1",
+            name = "Test Account",
+            issuer = "Test Issuer",
+            secret = "TEST_SECRET",
+            algorithm = "SHA1",
+            digits = 6,
+            period = 30
+        )
+
+        val testPreferences = UserPreferences(
+            id = "",
+            isDarkModeEnabled = true,
+            autoRefreshInterval = 30,
+            showSeconds = true,
+            hapticFeedback = false
+        )
+    }
+
     @Before
     fun setUp() {
-        repository = TotpRepository(totpAccountDao, userPreferencesDao)
+        totpRepository = TotpRepository(mockTotpAccountDao, mockUserPreferencesDao)
     }
-    
+
+    // TOTP Account operations tests
+
     @Test
-    fun `getAllAccounts should return flow from dao`() = runTest {
+    fun `getAllAccounts returns flow from dao`() = runTest {
         // Given
-        val accounts = listOf(
-            TotpAccount(name = "Test Account 1", secret = "secret1"),
-            TotpAccount(name = "Test Account 2", secret = "secret2")
-        )
-        `when`(totpAccountDao.getAllAccounts()).thenReturn(flowOf(accounts))
-        
+        val expectedAccounts = listOf(testAccount)
+        whenever(mockTotpAccountDao.getAllAccounts()).thenReturn(flowOf(expectedAccounts))
+
         // When
-        val result = repository.getAllAccounts()
-        
+        val result = totpRepository.getAllAccounts().toList()
+
         // Then
-        verify(totpAccountDao).getAllAccounts()
+        assertEquals(listOf(expectedAccounts), result)
     }
-    
+
     @Test
-    fun `insertAccount should call dao insert`() = runTest {
+    fun `getAccountById returns account from dao`() = runTest {
         // Given
-        val account = TotpAccount(name = "Test Account", secret = "secret")
-        
+        val accountId = "1"
+        whenever(mockTotpAccountDao.getAccountById(accountId)).thenReturn(testAccount)
+
         // When
-        repository.insertAccount(account)
-        
+        val result = totpRepository.getAccountById(accountId)
+
         // Then
-        verify(totpAccountDao).insertAccount(account)
+        assertEquals(testAccount, result)
+        verify(mockTotpAccountDao).getAccountById(accountId)
     }
-    
+
     @Test
-    fun `deleteAccount should call dao delete`() = runTest {
+    fun `getAccountById returns null when not found`() = runTest {
         // Given
-        val account = TotpAccount(name = "Test Account", secret = "secret")
-        
+        val accountId = "non-existent"
+        whenever(mockTotpAccountDao.getAccountById(accountId)).thenReturn(null)
+
         // When
-        repository.deleteAccount(account)
-        
+        val result = totpRepository.getAccountById(accountId)
+
         // Then
-        verify(totpAccountDao).deleteAccount(account)
+        assertEquals(null, result)
     }
-    
+
     @Test
-    fun `getPreferences should return flow from dao`() = runTest {
+    fun `insertAccount calls dao insert`() = runTest {
+        // When
+        totpRepository.insertAccount(testAccount)
+
+        // Then
+        verify(mockTotpAccountDao).insertAccount(testAccount)
+    }
+
+    @Test
+    fun `updateAccount calls dao update`() = runTest {
+        // When
+        totpRepository.updateAccount(testAccount)
+
+        // Then
+        verify(mockTotpAccountDao).updateAccount(testAccount)
+    }
+
+    @Test
+    fun `deleteAccount calls dao delete`() = runTest {
+        // When
+        totpRepository.deleteAccount(testAccount)
+
+        // Then
+        verify(mockTotpAccountDao).deleteAccount(testAccount)
+    }
+
+    @Test
+    fun `deleteAccountById calls dao deleteAccountById`() = runTest {
         // Given
-        val preferences = UserPreferences()
-        `when`(userPreferencesDao.getPreferences()).thenReturn(flowOf(preferences))
-        
+        val accountId = "1"
+
         // When
-        val result = repository.getPreferences()
-        
+        totpRepository.deleteAccountById(accountId)
+
         // Then
-        verify(userPreferencesDao).getPreferences()
+        verify(mockTotpAccountDao).deleteAccountById(accountId)
     }
-    
+
     @Test
-    fun `updateDarkMode should call dao update`() = runTest {
+    fun `getAccountCount returns count from dao`() = runTest {
+        // Given
+        val expectedCount = 5
+        whenever(mockTotpAccountDao.getAccountCount()).thenReturn(expectedCount)
+
+        // When
+        val result = totpRepository.getAccountCount()
+
+        // Then
+        assertEquals(expectedCount, result)
+    }
+
+    // User Preferences operations tests
+
+    @Test
+    fun `getPreferences returns flow from dao`() = runTest {
+        // Given
+        whenever(mockUserPreferencesDao.getPreferences()).thenReturn(flowOf(testPreferences))
+
+        // When
+        val result = totpRepository.getPreferences().toList()
+
+        // Then
+        assertEquals(listOf(testPreferences), result)
+    }
+
+    @Test
+    fun `getPreferences returns null flow from dao`() = runTest {
+        // Given
+        whenever(mockUserPreferencesDao.getPreferences()).thenReturn(flowOf(null))
+
+        // When
+        val result = totpRepository.getPreferences().toList()
+
+        // Then
+        assertEquals(listOf(null), result)
+    }
+
+    @Test
+    fun `insertPreferences calls dao insert`() = runTest {
+        // When
+        totpRepository.insertPreferences(testPreferences)
+
+        // Then
+        verify(mockUserPreferencesDao).insertPreferences(testPreferences)
+    }
+
+    @Test
+    fun `updatePreferences calls dao update`() = runTest {
+        // When
+        totpRepository.updatePreferences(testPreferences)
+
+        // Then
+        verify(mockUserPreferencesDao).updatePreferences(testPreferences)
+    }
+
+    @Test
+    fun `updateDarkMode calls dao updateDarkMode`() = runTest {
         // Given
         val isDarkMode = true
-        
+
         // When
-        repository.updateDarkMode(isDarkMode)
-        
+        totpRepository.updateDarkMode(isDarkMode)
+
         // Then
-        verify(userPreferencesDao).updateDarkMode(isDarkMode)
+        verify(mockUserPreferencesDao).updateDarkMode(isDarkMode)
+    }
+
+    @Test
+    fun `updateRefreshInterval calls dao updateRefreshInterval`() = runTest {
+        // Given
+        val interval = 60
+
+        // When
+        totpRepository.updateRefreshInterval(interval)
+
+        // Then
+        verify(mockUserPreferencesDao).updateRefreshInterval(interval)
+    }
+
+    @Test
+    fun `updateShowSeconds calls dao updateShowSeconds`() = runTest {
+        // Given
+        val showSeconds = true
+
+        // When
+        totpRepository.updateShowSeconds(showSeconds)
+
+        // Then
+        verify(mockUserPreferencesDao).updateShowSeconds(showSeconds)
+    }
+
+    @Test
+    fun `updateHapticFeedback calls dao updateHapticFeedback`() = runTest {
+        // Given
+        val hapticFeedback = true
+
+        // When
+        totpRepository.updateHapticFeedback(hapticFeedback)
+
+        // Then
+        verify(mockUserPreferencesDao).updateHapticFeedback(hapticFeedback)
     }
 }

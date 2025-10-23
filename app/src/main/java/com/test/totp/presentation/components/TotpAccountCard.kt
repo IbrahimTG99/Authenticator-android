@@ -1,5 +1,6 @@
 package com.test.totp.presentation.components
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -57,7 +58,7 @@ fun TotpAccountCard(
     modifier: Modifier = Modifier
 ) {
     val clipboardManager = LocalClipboardManager.current
-    LocalContext.current
+    val localContext = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     Card(
@@ -159,7 +160,7 @@ fun TotpAccountCard(
                     Button(
                         onClick = {
                             clipboardManager.setText(AnnotatedString(code.code))
-                            // TODO: Show snackbar or toast for feedback
+                            Toast.makeText(localContext, "Code copied to clipboard", Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {

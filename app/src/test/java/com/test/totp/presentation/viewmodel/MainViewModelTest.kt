@@ -3,6 +3,7 @@ package com.test.totp.presentation.viewmodel
 import com.test.totp.data.model.TotpAccount
 import com.test.totp.data.model.UserPreferences
 import com.test.totp.data.repository.TotpRepository
+import com.test.totp.data.security.EncryptionService
 import com.test.totp.domain.service.TotpService
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -21,12 +22,18 @@ class MainViewModelTest {
     
     @Mock
     private lateinit var totpService: TotpService
+
+    @Mock
+    private lateinit var encryptionService: EncryptionService
     
     private lateinit var viewModel: MainViewModel
     
     @Before
     fun setUp() {
-        viewModel = MainViewModel(repository, totpService)
+        viewModel = MainViewModel(
+            repository, totpService,
+            encryptionService = encryptionService
+        )
     }
     
     @Test
